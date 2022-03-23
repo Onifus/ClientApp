@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,7 +48,16 @@ namespace NetTest
 
         private void sendBtn_Click(object sender, EventArgs e)
         {
-             client.WriteLineAndGetReply(textBox1.Text, TimeSpan.FromSeconds(3));
+
+            var buffer = new MemoryStream();
+            var WRITTER = new BinaryWriter(buffer);
+            WRITTER.Write(1);
+            WRITTER.Write(1);
+            WRITTER.Write('@');
+            WRITTER.Close();
+            byte[] bytes = buffer.ToArray();
+
+            client.Write(bytes);
         }
     }
 }
