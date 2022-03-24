@@ -43,9 +43,25 @@ namespace NetTest
             client = new SimpleTcpClient();
             client.StringEncoder = Encoding.UTF8;
             client.DataReceived += Client_DataReceived;
+            connectBtn.Enabled = false;
+            client.Connect(ip, Convert.ToInt32(port));
         }
         private void Client_DataReceived(object sender, SimpleTCP.Message e)
         {
+            if(e.MessageString == "X")
+            {
+                type = 'X';
+            }
+            else if(e.MessageString == "O")
+            {
+                type = 'O';
+            }
+            else
+            {
+                MessageBox.Show(e.MessageString);
+                this.Close();
+            }
+
             //Update message to txtStatus
             textBox2.Invoke((MethodInvoker)delegate ()
             {
@@ -75,10 +91,8 @@ namespace NetTest
             client.Write(bytes);
         }
 
-        private void DrawLines()
+        private void DrawLines(Graphics g)
         {
-            var g = pictureBox1.CreateGraphics();
-
             for (int i = 0; i < 10; i++)
             {
                 for (int j = 0; j < 10; j++)
@@ -91,7 +105,7 @@ namespace NetTest
         private void LoadImages()
         {
             symbolX = Image.FromFile(imgDir + "Symbol-X.png");
-            symbolX = Image.FromFile(imgDir + "Symbol-O.png");
+            symbolO = Image.FromFile(imgDir + "Symbol-O.png");
         }
 
         private void TestSymbols()
@@ -103,13 +117,34 @@ namespace NetTest
             this.gameInfos.Add(gameInfo);
         }
 
-        private void DrawGameSymbols()
+        private bool SendMessage(GameInfo newGameInfo)
         {
-            var g = pictureBox1.CreateGraphics();
+            var buffer = new MemoryStream();
+            var WRITTER = new BinaryWriter(buffer);
 
+            WRITTER.Write(newGameInfo.x);
+            WRITTER.Write(newGameInfo.y);
+            WRITTER.Write(newGameInfo.type);
+            WRITTER.Close();
+            byte[] bytes = buffer.ToArray();
+
+            client.Write(bytes);
+
+            return false;
+        }
+
+        private void DrawGameSymbols(Graphics g)
+        {
             foreach (var gi in this.gameInfos)
             {
-                g.DrawImage(symbolX, new Point(gi.x * size, gi.y * size));
+                if(type == 'X')
+                {
+                    g.DrawImage(symbolX, new Point(gi.x * size, gi.y * size));
+                }
+                else
+                {
+                    g.DrawImage(symbolO, new Point(gi.x * size, gi.y * size));
+                }
             }
 
             Pen blackPen = new Pen(Color.Black);
@@ -119,8 +154,8 @@ namespace NetTest
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             //var g = pictureBox1.CreateGraphics();
-            DrawLines();
-            DrawGameSymbols();
+            DrawLines(e.Graphics);
+            DrawGameSymbols(e.Graphics);
 
         }
 
@@ -136,6 +171,9 @@ namespace NetTest
             gameInfo.y = e.Y / 30;
             gameInfo.type = type;
             this.gameInfos.Add(gameInfo);
+
+            pictureBox1.Refresh();
+            SendMessage(gameInfo);
         }
     }
 }
